@@ -236,7 +236,7 @@ Item {
             
             delegate: Rectangle {
               id: layoutBtn
-              width: (root.contentPreferredWidth - Style.marginL * 2 - Style.marginS * 2) / 3 - Style.marginS
+              width: (root.contentPreferredWidth - Style.marginL * 2 - Style.marginS * 2) / 3
               height: 72 * Style.uiScaleRatio
               
               property bool isActive: {
