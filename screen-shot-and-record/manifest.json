@@ -10,7 +10,8 @@
     "tags": [
         "Bar",
         "Panel",
-        "Utility"
+        "Utility",
+        "Hyprland"
     ],
     "entryPoints": {
         "main": "Main.qml",
