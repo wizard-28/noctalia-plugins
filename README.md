@@ -142,15 +142,6 @@ This allows the community to share and use plugins outside the main registry.
 | rukh-debug  | [GitHub](https://github.com/rukh-debug/noctalia-unofficial-plugins) |
 | ajunca      | [GitHub](https://github.com/ajunca/noctalia-dropdown-terminal)      |
 
-## Development
-
-```bash
-# Update registry manually
-node .github/workflows/update-registry.js
-```
-
-Do NOT commit registry.json in your Pull Requests as it is automatically regenerated.
-
 ## AI Development
 
 If using AI tools to contribute, see [AGENTS.md](./AGENTS.md) for plugin patterns and guidelines.
