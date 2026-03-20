@@ -20,6 +20,22 @@ Item {
   property var folders: []
   property var tempFolders: []
   property string homeDir: StandardPaths.writableLocation(StandardPaths.HomeLocation).toString().replace("file://", "")
+  property bool zedInstalled: false
+  property string zedBin: "zed"
+
+  Process {
+    id: whichZed
+    command: ["sh", "-c", "command -v zeditor >/dev/null 2>&1 && echo zeditor || command -v zed >/dev/null 2>&1 && echo zed || echo notfound"]
+    stdout: SplitParser {
+      onRead: data => {
+        var bin = data.trim()
+        if (bin !== "notfound" && bin !== "") {
+          root.zedBin = bin
+          root.zedInstalled = true
+        }
+      }
+    }
+  }
 
   Process {
     id: dbQuery
@@ -70,6 +86,7 @@ Item {
 
   function init() {
     dbQuery.running = true
+    whichZed.running = true
   }
 
   function onOpened() {
@@ -97,6 +114,16 @@ Item {
   function getResults(searchText) {
     if (!searchText.startsWith(">zed")) {
       return []
+    }
+
+    if (!root.zedInstalled) {
+      return [{
+        "name": pluginApi?.tr("launcher.not_installed"),
+        "description": pluginApi?.tr("launcher.not_installed_desc"),
+        "icon": "alert-circle",
+        "isTablerIcon": true,
+        "onActivate": function() { launcher.close() }
+      }]
     }
 
     var query = searchText.slice(4).trim()
@@ -135,7 +162,7 @@ Item {
           "isTablerIcon": true,
           "isImage": false,
           "onActivate": function() {
-            Quickshell.execDetached(["zed", resolvedQuery])
+            Quickshell.execDetached(["bash", "-l", "-c", `${root.zedBin} '${resolvedQuery}'`])
             launcher.close()
           }
         })
@@ -220,7 +247,7 @@ Item {
             pluginApi.pluginSettings.openCounts = counts
             pluginApi.saveSettings()
           }
-          Quickshell.execDetached(["zed", p.path])
+          Quickshell.execDetached(["bash", "-l", "-c", `${root.zedBin} '${p.path}'`])
           launcher.close()
         }
       }
