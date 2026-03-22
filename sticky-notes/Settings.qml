@@ -11,7 +11,7 @@ ColumnLayout {
 
   property var cfg: pluginApi?.pluginSettings || ({})
   property var defaults: pluginApi?.manifest?.metadata?.defaultSettings || ({})
-  property var mainInstance: pluginApi?.mainInstance
+  property var mainInstance: pluginApi?.mainInstance || null
 
   property bool valueSyncEnabled: cfg.syncEnabled ?? defaults.syncEnabled ?? false
   property string valueGithubToken: cfg.githubToken ?? defaults.githubToken ?? ""
