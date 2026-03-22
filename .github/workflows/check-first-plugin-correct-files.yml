@@ -29,12 +29,12 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           # Get the folders from base and the folders from the head of the PR
-          base_folders=$(gh api repos/$REPO/git/trees/$BASE_SHA --jq '[ .tree[] | select(.type == "tree") | .path ]' || echo "undefined")
-          head_folders=$(gh api repos/$REPO/git/trees/$HEAD_SHA --jq '[ .tree[] | select(.type == "tree") | .path ]' || echo "undefined")
+          base_folders=$(gh api "repos/$REPO/git/trees/$BASE_SHA" --jq '[ .tree[] | select(.type == "tree") | .path ]' || echo "undefined")
+          head_folders=$(gh api "repos/$REPO/git/trees/$HEAD_SHA" --jq '[ .tree[] | select(.type == "tree") | .path ]' || echo "undefined")
 
           if [ "$base_folders" = "undefined" ] || [ "$head_folders" = "undefined" ]; then
             echo "Could not fetch tree folders from GitHub API"
-            continue
+            exit 1
           fi
 
           # Check the difference between base and head, and get the added folders
@@ -42,12 +42,16 @@ jobs:
 
           if [ "$added_folders" = "[]" ] || [ -z "$added_folders" ]; then
             echo "No new folder detected"
-            continue
+            exit 0
           fi
 
+          head_tree=$(gh api "repos/$REPO/git/trees/$HEAD_SHA")
+
           # Do this for all added folders, usually only one
-          for folder in $added_folders
+          for folder in $(echo "$added_folders" | jq -r '.[]')
           do
+            echo "Checking folder: $folder"
+
             required_files=(
               "README.md"
               "preview.*"
@@ -55,13 +59,14 @@ jobs:
             )
 
             # Get all the files that exist in this PR
-            files_in_pr=$(gh api repos/$REPO/git/trees/$HEAD_SHA:$folder --jq '[ .tree[] | select(.type == "blob") | .path ]')
+            folder_sha=$(echo "$head_tree" | jq --arg folder "$folder" '.tree[] | select(.path == $folder and .type == "tree") | .sha')
+            files_in_pr=$(gh api "repos/$REPO/git/trees/$folder_sha" --jq '[ .tree[] | select(.type == "blob") | .path ]')
 
             ## Check which required files are fulfilled
-            for file in files_in_pr
+            for file in $(echo "$files_in_pr" | jq -r '.[]')
             do
               # Check if this file exists inside of the required_files
-              for required in required_files
+              for required in "${required_files[@]}"
               do
                 if [[ "$file" =~ $required ]]; then
                   # Remove the required file from the array
@@ -87,4 +92,3 @@ jobs:
             # Post comment using gh CLI
             gh pr comment "$PR_NUMBER" --body "$comment_body"
           done
-
