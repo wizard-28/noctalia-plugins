@@ -1,5 +1,5 @@
-import qs.Commons
 import QtQuick
+import qs.Commons
 
 Item {
   id: cardStack

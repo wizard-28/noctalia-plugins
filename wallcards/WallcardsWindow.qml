@@ -1,4 +1,6 @@
+
 import "src"
+import "src/Utils.js" as Utils
 
 import qs.Commons
 import qs.Widgets
@@ -64,18 +66,13 @@ PanelWindow {
   // ── File model ──
   //
 
-  property Utils utils: Utils {
-    filterImages: root.filterImages
-    filterVideos: root.filterVideos
-  }
-
   function rebuildFilteredItems() {
     var items = [];
 
     for (var i = 0; i < folderModel.count; i++) {
       var fn = folderModel.get(i, "fileName");
       var fp = folderModel.get(i, "filePath");
-      if (utils.matchesFilter(fn, selectedFilter))
+      if (Utils.matchesFilter(fn, selectedFilter, filterImages, filterVideos))
         items.push({
           "fileName": fn,
           "filePath": fp
@@ -105,11 +102,11 @@ PanelWindow {
       (function (idx) {
           var filePath = folderModel.get(idx, "filePath");
           var fileName = folderModel.get(idx, "fileName");
-          var thumbName = utils.thumbnailName(fileName);
+          var thumbName = Utils.thumbnailName(fileName, filterVideos);
           var thumbnail = cacheDir + "/" + thumbName;
 
           var cmd;
-          if (utils.isVideo(fileName))
+          if (Utils.isVideo(fileName, filterVideos))
             cmd = "[ -f '" + thumbnail + "' ] || ffmpeg -y -i '" + filePath + "' -vf 'select=eq(n\\,0),scale=-1:1080' -frames:v 1 -q:v 2 '" + thumbnail + "' </dev/null 2>/dev/null";
           else
             cmd = "[ -f '" + thumbnail + "' ] || magick '" + filePath + "' -resize x500 -quality 95 '" + thumbnail + "'";
@@ -139,7 +136,7 @@ PanelWindow {
   function applyCard(filePath) {
     var fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
 
-    if (utils.isVideo(fileName))
+    if (Utils.isVideo(fileName, filterVideos))
       Logger.i("Wallcards", "Not implemented yet.");
     else {
       var screen = Settings.data.wallpaper.setWallpaperOnAllMonitors ? undefined : targetScreen.name;
@@ -152,7 +149,7 @@ PanelWindow {
 
     folder: Qt.resolvedUrl("file://" + wallpaperDir)
     showDirs: false
-    nameFilters: utils.nameFilters()
+    nameFilters: Utils.nameFilters(filterImages, filterVideos)
     sortField: FolderListModel.Name
     onStatusChanged: {
       if (status === FolderListModel.Ready) {
@@ -445,13 +442,13 @@ PanelWindow {
           property real fractionalSlot: offset + (cardStack.runningIndex - cardStack.animationIndex)
           property int modelIndex: cardStack.wrappedIndex(Math.round(cardStack.runningIndex) + offset)
           property string currentFileName: root.getFileName(modelIndex)
-          property bool isVideoFile: root.utils.isVideo(currentFileName)
+          property bool isVideoFile: Utils.isVideo(currentFileName, root.filterVideos)
           property bool isCenter: offset === 0
           property string targetSource: baseSource
 
           // INFO: Trigger auto updating cards, when thumbnails are created. Otherwise images are not shown until cards
           // are moved.
-          property string baseSource: root.filteredCount > 0 ? `file://${cacheDir}/${utils.thumbnailName(currentFileName)}` : ""
+          property string baseSource: root.filteredCount > 0 ? `file://${cacheDir}/${Utils.thumbnailName(currentFileName, root.filterVideos)}` : ""
           property int lastRevision: -1
 
           function tryLoadThumbnail() {
@@ -474,7 +471,7 @@ PanelWindow {
           }
 
           onModelIndexChanged: {
-            var newSource = root.filteredCount > 0 ? `file://${cacheDir}/${utils.thumbnailName(root.getFileName(modelIndex))}` : "";
+            var newSource = root.filteredCount > 0 ? `file://${cacheDir}/${Utils.thumbnailName(root.getFileName(modelIndex), root.filterVideos)}` : "";
             if (img.source.toString() !== newSource) {
               imgOld.source = img.source;
               imgOld.opacity = 1;
